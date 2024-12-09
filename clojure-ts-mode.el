@@ -145,6 +145,12 @@ Only intended for use at development time.")
     table)
   "Syntax table for `clojure-ts-mode'.")
 
+(defconst clojure-ts--anon-fn-sym-regexp
+  (eval-and-compile
+    (rx bol (or "%"
+                "%&"
+                (seq "%" (+ num)))
+        eol)))
 
 (defconst clojure-ts--builtin-dynamic-var-regexp
   (eval-and-compile
@@ -347,6 +353,27 @@ with the markdown_inline grammar."
        marker: _ @clojure-ts-keyword-face
        delimiter: _ :? @default))
 
+    :feature 'ns-slash-delim
+    :language 'clojure
+    '((sym_lit
+       (sym_ns)
+       delimiter: "/" @font-lock-type-face
+       ))
+
+    :feature 'ampr-rest-params
+    :language 'clojure
+    `((vec_lit
+       (sym_lit) @font-lock-type-face
+       (:equal "&" @font-lock-type-face)
+       ))
+
+    :feature 'anon-fn-sym
+    :language 'clojure
+    `((list_lit
+       (sym_lit) @font-lock-type-face
+       (:match ,clojure-ts--anon-fn-sym-regexp @font-lock-type-face)
+       ))
+
     :feature 'builtin
     :language 'clojure
     `(((list_lit meta: _ :? :anchor (sym_lit (sym_name) @font-lock-keyword-face))
@@ -388,7 +415,10 @@ with the markdown_inline grammar."
                        eol))
                @def))
       ((anon_fn_lit
-        marker: "#" @font-lock-property-face))
+        marker: "#" @font-lock-type-face
+        (sym_lit) @font-lock-type-face
+        (:match ,clojure-ts--anon-fn-sym-regexp @font-lock-type-face)
+        ))
       ;; Methods implementation
       ((list_lit
         ((sym_lit name: (sym_name) @def)
@@ -486,7 +516,7 @@ with the markdown_inline grammar."
     :feature 'bracket
     :language 'clojure
     '((["(" ")" "[" "]" "{" "}"]) @font-lock-bracket-face
-      (set_lit :anchor "#" @font-lock-bracket-face))
+      (set_lit :anchor "#" @font-lock-type-face))
 
     :feature 'comment
     :language 'clojure
@@ -504,7 +534,9 @@ with the markdown_inline grammar."
     :feature 'deref ;; not part of clojure-mode, but a cool idea?
     :language 'clojure
     '((derefing_lit
-       marker: "@" @font-lock-warning-face)))))
+       marker: "@" @font-lock-type-face))
+
+    )))
 
 ;; Node predicates
 
@@ -958,11 +990,16 @@ See `clojure-ts--font-lock-settings' for usage of MARKDOWN-AVAILABLE."
               #'clojure-ts--standard-definition-node-name)
   (setq-local treesit-simple-imenu-settings
               clojure-ts--imenu-settings)
+  ;; (setq-local treesit-font-lock-feature-list
+  ;;             '((comment definition variable)
+  ;;               (keyword string char symbol builtin type)
+  ;;               (constant number quote metadata doc)
+  ;;               (bracket deref function regex tagged-literals)))
   (setq-local treesit-font-lock-feature-list
               '((comment definition variable)
                 (keyword string char symbol builtin type)
-                (constant number quote metadata doc)
-                (bracket deref function regex tagged-literals)))
+                (ns-slash-delim ampr-rest-params anon-fn-sym bracket deref constant number quote metadata doc regex tagged-literals)
+                (function)))
   (when (boundp 'treesit-thing-settings) ;; Emacs 30+
     (setq-local treesit-thing-settings clojure-ts--thing-settings)))
 
