@@ -374,6 +374,11 @@ with the markdown_inline grammar."
        (:match ,clojure-ts--anon-fn-sym-regexp @font-lock-type-face)
        ))
 
+    :feature 'meta-lit-sym ;; this didn't always get matched before
+    :language 'clojure
+    `((meta_lit
+       marker: "^" @font-lock-operator-face))
+
     :feature 'builtin
     :language 'clojure
     `(((list_lit meta: _ :? :anchor (sym_lit (sym_name) @font-lock-keyword-face))
@@ -998,7 +1003,7 @@ See `clojure-ts--font-lock-settings' for usage of MARKDOWN-AVAILABLE."
   (setq-local treesit-font-lock-feature-list
               '((comment definition variable)
                 (keyword string char symbol builtin type)
-                (ns-slash-delim ampr-rest-params anon-fn-sym bracket deref constant number quote metadata doc regex tagged-literals)
+                (meta-lit-sym ns-slash-delim ampr-rest-params anon-fn-sym bracket deref constant number quote metadata doc regex tagged-literals)
                 (function)))
   (when (boundp 'treesit-thing-settings) ;; Emacs 30+
     (setq-local treesit-thing-settings clojure-ts--thing-settings)))
